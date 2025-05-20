@@ -1,6 +1,6 @@
 # Data Unlearning in Diffusion Models (ICLR 2025)
 
-This codebase implements various fine-tuning methods for forgetting specific training datapoints (data unlearning) from diffusion models without having to retrain from scratch. Our main contribution is SISS (Subtracted Importance Sampled Scores), a principled and efficient data unlearning objective. More details can be found in our paper at https://openreview.net/pdf?id=SuHScQv5gP.
+This codebase implements various fine-tuning methods for forgetting specific training datapoints (data unlearning) from diffusion models without having to retrain from scratch. Our main contribution is SISS (Subtracted Importance Sampled Scores), a principled and efficient data unlearning objective. More details can be found in our paper at https://arxiv.org/abs/2503.01034.
 
 ## Setup
 
