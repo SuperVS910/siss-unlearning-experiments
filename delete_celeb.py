@@ -589,9 +589,9 @@ class DeleteCeleb(Task):
             # Sample a random timestep for each image (same for all and deletion pairs)
             if self.cfg.deletion.timestep_del_window is None and self.cfg.deletion.loss_fn == "modified_noise_obj":
                 raise ValueError('Timestep deletion window length must be provided for the modified_noise_obj loss function.')
-            start_timestep = noise_scheduler.config.num_train_timesteps - self.cfg.deletion.timestep_del_window if self.cfg.deletion.loss_fn == "modified_noise_obj" else 0
+            start_timestep = 0
             timesteps = torch.randint(
-                999, #start_timestep,
+                start_timestep,
                 noise_scheduler.config.num_train_timesteps,
                 (bsz,),
                 device=all_images.device,
