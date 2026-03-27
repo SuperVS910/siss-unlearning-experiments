@@ -4,7 +4,7 @@
 
 1. Clone the repo.
     ```sh
-    git clone https://github.com/YOUR_USERNAME/siss-unlearning-experiments.git
+    git clone https://github.com/SuperVS910/siss-unlearning-experiments.git
     cd siss-unlearning-experiments
     ```
 
