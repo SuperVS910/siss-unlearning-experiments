@@ -36,7 +36,7 @@ class FIDEvaluator:
     
     def load_celeb(self):
         print('Loading CelebAHQ as FID real examples...')
-        celeb_dataset = CelebAHQ(filter='all', data_path='data/examples/celeba_hq_256', transform=transforms.ToTensor())
+        celeb_dataset = CelebAHQ(filter='all', data_path='data/datasets/celeba_hq_256', transform=transforms.ToTensor())
         dataloader = DataLoader(celeb_dataset, batch_size=self.batch_size, shuffle=False)
         for images in tqdm(dataloader):
             images = images.to(self.device)

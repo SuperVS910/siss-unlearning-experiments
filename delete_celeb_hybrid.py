@@ -227,6 +227,11 @@ class DeleteCeleb(Task):
         #     )
         # noise_scheduler = hydra.utils.instantiate(self.cfg.scheduler)
         noise_scheduler = ddpm_pipeline.scheduler
+        # Synthetic data generator (IMPORTANT: create once)
+        synthetic_pipeline = DDPMPipeline(
+            unet=unet,
+            scheduler=noise_scheduler,
+        ).to(accelerator.device)
 
         # Instantiate optimizer
         optimizer = hydra.utils.instantiate(self.cfg.optimizer, unet.parameters())
@@ -557,14 +562,44 @@ class DeleteCeleb(Task):
         while global_step < self.cfg.training_steps * len(self.cfg.deletion.img_name):
             unet.train()
 
-            all_images = next(dataset_all_iterator)
-            all_images = all_images.to(device=accelerator.device, dtype=weight_dtype)
+            # ===== REAL RETAIN SAMPLES =====
+            real_images = next(dataset_all_iterator)
+            real_images = real_images.to(device=accelerator.device, dtype=weight_dtype)
 
+            # ===== SYNTHETIC RETAIN SAMPLES =====
+            with torch.no_grad():
+                synthetic_images = synthetic_pipeline(
+                    batch_size=self.cfg.train_batch_size,
+                    num_inference_steps=50
+                ).images
+
+            synthetic_images = torch.stack([
+                transform(img) for img in synthetic_images
+            ]).to(device=accelerator.device, dtype=weight_dtype)
+
+            synthetic_images = synthetic_images.detach()
+
+            # ===== RANDOM SAMPLING =====
+
+            #change <0.5 to adjust sampling
+            mask = torch.rand(self.cfg.train_batch_size, device=real_images.device) < 0.5
+
+            all_images = torch.where(
+                mask[:, None, None, None],
+                real_images,
+                synthetic_images
+            )
+            
+                
+            
             deletion_images = next(dataset_deletion_iterator)
             deletion_images = deletion_images.to(device=accelerator.device, dtype=weight_dtype)
 
             target_image = deletion_images[0].squeeze()
             
+
+            torch.cuda.empty_cache()
+
             # for step, batch in enumerate(train_dataloader):
                 # Skip steps until we reach the resumed step
             # if (
@@ -577,7 +612,7 @@ class DeleteCeleb(Task):
 
             # all_images = batch.to(weight_dtype)
             # Sample noise that we'll add to the images (same one for both all and deletion!)
-            assert all_images.shape == deletion_images.shape
+            all_images = all_images[:deletion_images.shape[0]]
             noise = torch.randn(
                 all_images.shape, dtype=weight_dtype, device=all_images.device
             )
@@ -875,7 +910,7 @@ class DeleteCeleb(Task):
         progress_bar.close()
         # ===== Save final unlearned model =====
         if accelerator.is_main_process:
-            logger.info("Saving final unlearned model...")
+            logger.info("Saving final hybrid unlearned model...")
 
             unet = accelerator.unwrap_model(unet)
 
@@ -889,7 +924,7 @@ class DeleteCeleb(Task):
                 scheduler=noise_scheduler,
             )
 
-            save_dir = os.path.join(self.cfg.output_dir, "unlearned_model")
+            save_dir = self.cfg.output_dir
             pipeline.save_pretrained(save_dir)
 
             logger.info(f"Unlearned model saved to {save_dir}")

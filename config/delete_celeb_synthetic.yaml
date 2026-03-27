@@ -1,9 +1,9 @@
 task:
-  _target_: delete_celeb.DeleteCeleb
+  _target_: delete_celeb_synthetic.DeleteCeleb
 
 random_seed: 42
 project_name: celeb-deletion
-output_dir: checkpoints/celeb/deletion
+output_dir: checkpoints/celeb/synthetic/
 checkpoint_path: google/ddpm-celebahq-256 # checkpoints/cifar/base/final/checkpoint-550000 # google/ddpm-cifar10-32 # checkpoints/cifar/base/2024-04-17_03-08-11/checkpoint-60000 #checkpoints/cifar/base/pretrained/ddpm_ema_cifar10
 data_dir: data/datasets/celeba_hq_256
 
@@ -94,7 +94,7 @@ scheduler:
   _target_: diffusers.DDPMScheduler
   prediction_type: epsilon
 
-sampling_steps: 60 # Specifies number of gradient steps after which to evaluate
+sampling_steps: 10000000000  #Specifies number of gradient steps after which to evaluate
 checkpointing_steps: 60 # Specifies number of gradient steps after which to save checkpoint
 training_steps: 60
 warmup_steps: 0 # for lr scheduler
@@ -102,8 +102,8 @@ eval_batch_size: 1
 gradient_accumulation_steps: 16
 mixed_precision: null # Choices: null (defaults to fp32), "fp16", "bf16". Bf16 requires an Nvidia Ampere GPU or newer
 resume_from_checkpoint: null
-train_batch_size: 2 # Makes 500 steps roughly 1 epoch
-dataloader_num_workers: 4
+train_batch_size: 1 # Makes 500 steps roughly 1 epoch
+dataloader_num_workers: 2
 checkpoints_total_limit: null
 
 lr_scheduler: constant

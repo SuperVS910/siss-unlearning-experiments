@@ -227,6 +227,11 @@ class DeleteCeleb(Task):
         #     )
         # noise_scheduler = hydra.utils.instantiate(self.cfg.scheduler)
         noise_scheduler = ddpm_pipeline.scheduler
+        # Synthetic data generator (IMPORTANT: create once)
+        synthetic_pipeline = DDPMPipeline(
+            unet=unet,
+            scheduler=noise_scheduler,
+        ).to(accelerator.device)
 
         # Instantiate optimizer
         optimizer = hydra.utils.instantiate(self.cfg.optimizer, unet.parameters())
@@ -289,7 +294,7 @@ class DeleteCeleb(Task):
             num_workers=self.cfg.dataloader_num_workers,
             sampler=sampler_deletion
         )
-        dataset_all_iterator = iter(dataloader_all)
+        dataset_all_iterator = None
         dataset_deletion_iterator = iter(dataloader_deletion)
         
         # Initialize the learning rate scheduler
@@ -557,8 +562,22 @@ class DeleteCeleb(Task):
         while global_step < self.cfg.training_steps * len(self.cfg.deletion.img_name):
             unet.train()
 
-            all_images = next(dataset_all_iterator)
-            all_images = all_images.to(device=accelerator.device, dtype=weight_dtype)
+            # Generate synthetic retain samples
+            with torch.no_grad():
+                synthetic_images = synthetic_pipeline(
+                    batch_size=self.cfg.train_batch_size,
+                    num_inference_steps=50
+                ).images
+            
+            #Convert PIL → tensor
+            synthetic_images = torch.stack([
+                transform(img) for img in synthetic_images
+            ]).to(device=accelerator.device, dtype=weight_dtype)
+
+            all_images = synthetic_images.detach()
+    
+            torch.cuda.empty_cache()
+            
 
             deletion_images = next(dataset_deletion_iterator)
             deletion_images = deletion_images.to(device=accelerator.device, dtype=weight_dtype)
@@ -889,7 +908,7 @@ class DeleteCeleb(Task):
                 scheduler=noise_scheduler,
             )
 
-            save_dir = os.path.join(self.cfg.output_dir, "unlearned_model")
+            save_dir = self.cfg.output_dir
             pipeline.save_pretrained(save_dir)
 
             logger.info(f"Unlearned model saved to {save_dir}")
