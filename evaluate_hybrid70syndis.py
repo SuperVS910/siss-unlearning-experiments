@@ -166,7 +166,7 @@ def load_real_images(path):
 
 def evaluate():
     base_model_path = "google/ddpm-celebahq-256"
-    unlearned_model_path = "checkpoints/celeb/deletion/2026-04-02_02-01-17_ee2d0b59-af34-4884-ad7f-e88ba8f661ea/unlearned_model"
+    unlearned_model_path = "checkpoints/celeb/hybrid70syndis/2026-04-09_05-15-51_acd70924-74a5-4e02-aeb4-c8631addd357"
 
     base = load_model(base_model_path)
     unlearned = load_model(unlearned_model_path)
